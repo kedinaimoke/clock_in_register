@@ -65,7 +65,7 @@ class AddStaffDialog(QDialog):
         super().__init__()
         self.setWindowTitle("Add New Staff")
         self.setWindowIcon(QIcon("dsalogo-297x300.png"))
-        self.setFixedSize(400, 200)
+        self.setFixedSize(400, 300)
         
         layout = QVBoxLayout()
 
@@ -122,6 +122,59 @@ class AddStaffDialog(QDialog):
             writer.writerow([self.staff_id_input.text(), self.directorate_input.text(), self.staff_type_input.text(), self.full_name_input.text()])
 
         QMessageBox.information(self, "Success", "New staff added successfully.")
+        self.accept()
+
+class RemoveStaffDialog(QDialog):
+    def __init__(self, table_widget):
+        super().__init__()
+        self.setWindowTitle("Remove Staff")
+        self.setWindowIcon(QIcon("dsalogo-297x300.png"))
+        self.setFixedSize(400, 100)
+        
+        layout = QVBoxLayout()
+
+        self.staff_id_label = QLabel("Staff ID:")
+        self.staff_id_input = QLineEdit()
+        layout.addWidget(self.staff_id_label)
+        layout.addWidget(self.staff_id_input)
+
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel)
+        remove_button = QPushButton("Remove")
+        remove_button.clicked.connect(self.remove_data)
+        button_box.addButton(remove_button, QDialogButtonBox.ButtonRole.AcceptRole)
+        button_box.rejected.connect(self.reject)
+
+        layout.addWidget(button_box)
+        self.setLayout(layout)
+        self.table_widget = table_widget
+
+    def remove_data(self):
+        staff_id = self.staff_id_input.text().strip()
+        
+        if not staff_id:
+            QMessageBox.warning(self, "Warning", "Staff ID must be provided.")
+            return
+
+        # If staff ID is provided, remove the data
+        self.remove_staff()
+
+    def remove_staff(self):
+        rows = self.table_widget.rowCount()
+        for row in range(rows):
+            if self.table_widget.item(row, 0).text() == self.staff_id_input.text():
+                self.table_widget.removeRow(row)
+                break
+
+        # Remove the staff from the CSV file
+        with open("staff_data.csv", "r") as file:
+            lines = file.readlines()
+
+        with open("staff_data.csv", "w") as file:
+            for line in lines:
+                if self.staff_id_input.text() not in line:
+                    file.write(line)
+
+        QMessageBox.information(self, "Success", "Staff removed successfully.")
         self.accept()
 class ClockInRegister(QMainWindow):
     def __init__(self):
@@ -286,8 +339,13 @@ class ClockInRegister(QMainWindow):
         add_new_button.clicked.connect(lambda: self.add_new_staff(table))
         add_new_button.setFixedWidth(120)
 
+        remove_button = QPushButton("Remove Staff")
+        remove_button.clicked.connect(lambda: self.remove_staff(table))
+        remove_button.setFixedWidth(120)
+
         button_layout = QHBoxLayout()
         button_layout.addWidget(add_new_button)
+        button_layout.addWidget(remove_button)
         button_layout.addWidget(button_box)
     
         layout.addLayout(button_layout)
@@ -304,6 +362,10 @@ class ClockInRegister(QMainWindow):
         if add_dialog.exec_() == QDialog.Accepted:
             self.load_staff_names_from_csv("staff_data.csv")
 
+    def remove_staff(self, table):
+        remove_dialog = RemoveStaffDialog(table)
+        if remove_dialog.exec_() == QDialog.Accepted:
+            self.load_staff_names_from_csv("staff_data.csv")
 
     def save_staff_data(self, table):
         try:
