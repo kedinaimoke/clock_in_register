@@ -1,7 +1,7 @@
 import sys
 import csv
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QPushButton, QComboBox,
-                             QLineEdit, QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem,
+                             QLineEdit, QDialog, QHBoxLayout, QVBoxLayout, QTableWidget, QTableWidgetItem,
                              QMessageBox, QDialogButtonBox)
 from PyQt5.QtCore import QDateTime, QTimer, Qt
 from PyQt5.QtGui import QPixmap, QIcon, QFont
@@ -60,6 +60,69 @@ class LoginDialog(QDialog):
             self.username_input.clear()
             self.password_input.clear()
             self.username_input.setFocus()
+class AddStaffDialog(QDialog):
+    def __init__(self, table_widget):
+        super().__init__()
+        self.setWindowTitle("Add New Staff")
+        self.setWindowIcon(QIcon("dsalogo-297x300.png"))
+        self.setFixedSize(400, 200)
+        
+        layout = QVBoxLayout()
+
+        self.staff_id_label = QLabel("Staff ID:")
+        self.staff_id_input = QLineEdit()
+        layout.addWidget(self.staff_id_label)
+        layout.addWidget(self.staff_id_input)
+
+        self.directorate_label = QLabel("Directorate:")
+        self.directorate_input = QLineEdit()
+        layout.addWidget(self.directorate_label)
+        layout.addWidget(self.directorate_input)
+
+        self.staff_type_label = QLabel("Staff Type:")
+        self.staff_type_input = QLineEdit()
+        layout.addWidget(self.staff_type_label)
+        layout.addWidget(self.staff_type_input)
+
+        self.full_name_label = QLabel("Full Name:")
+        self.full_name_input = QLineEdit()
+        layout.addWidget(self.full_name_label)
+        layout.addWidget(self.full_name_input)
+
+        button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.validate_and_save)
+        button_box.rejected.connect(self.reject)
+
+        layout.addWidget(button_box)
+        self.setLayout(layout)
+        self.table_widget = table_widget
+
+    def validate_and_save(self):
+        staff_id = self.staff_id_input.text().strip()
+        directorate = self.directorate_input.text().strip()
+        staff_type = self.staff_type_input.text().strip()
+        full_name = self.full_name_input.text().strip()
+
+        if not staff_id or not directorate or not staff_type or not full_name:
+            QMessageBox.warning(self, "Warning", "All fields must be filled.")
+            return
+
+        self.save_data()
+
+    def save_data(self):
+        row_position = self.table_widget.rowCount()
+        self.table_widget.insertRow(row_position)
+        self.table_widget.setItem(row_position, 0, QTableWidgetItem(self.staff_id_input.text()))
+        self.table_widget.setItem(row_position, 1, QTableWidgetItem(self.directorate_input.text()))
+        self.table_widget.setItem(row_position, 2, QTableWidgetItem(self.staff_type_input.text()))
+        self.table_widget.setItem(row_position, 3, QTableWidgetItem(self.full_name_input.text()))
+
+        with open("staff_data.csv", "a", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow([self.staff_id_input.text(), self.directorate_input.text(), self.staff_type_input.text(), self.full_name_input.text()])
+
+        QMessageBox.information(self, "Success", "New staff added successfully.")
+        self.accept()
 class ClockInRegister(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -218,9 +281,29 @@ class ClockInRegister(QMainWindow):
         button_box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
         button_box.accepted.connect(lambda: self.save_staff_data(table))
         button_box.rejected.connect(dialog.reject)
-        layout.addWidget(button_box)
+
+        add_new_button = QPushButton("Add New Staff")
+        add_new_button.clicked.connect(lambda: self.add_new_staff(table))
+        add_new_button.setFixedWidth(120)
+
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(add_new_button)
+        button_layout.addWidget(button_box)
+    
+        layout.addLayout(button_layout)
+    
+        dialog.setLayout(layout)
+
+        # layout.addWidget(add_new_button)
+        # layout.addWidget(button_box)
         dialog.rejected.connect(lambda: self.load_staff_names_from_csv("staff_data.csv"))
         dialog.exec_()
+
+    def add_new_staff(self, table):
+        add_dialog = AddStaffDialog(table)
+        if add_dialog.exec_() == QDialog.Accepted:
+            self.load_staff_names_from_csv("staff_data.csv")
+
 
     def save_staff_data(self, table):
         try:
