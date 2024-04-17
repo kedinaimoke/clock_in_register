@@ -78,7 +78,7 @@ class ClockInRegister(QMainWindow):
         x_offset = 150
 
         self.image_label = QLabel(self)
-        self.image_label.setGeometry(250, 350, 200, 200)
+        self.image_label.setGeometry(280, 50, 200, 200)
         pixmap = QPixmap("dsalogo-297x300.png")
         self.image_label.setPixmap(pixmap)
         self.image_label.setScaledContents(True)
@@ -86,59 +86,59 @@ class ClockInRegister(QMainWindow):
         self.set_window_icon("dsalogo-297x300.png")
 
         self.staff_name_label = QLabel("Staff Name:", self)
-        self.staff_name_label.setGeometry(x_offset, 50, 100, input_height)
+        self.staff_name_label.setGeometry(x_offset, 300, 100, input_height)
         self.staff_name_label.setStyleSheet("color: darkgreen; font-weight: bold;")
 
         self.staff_name_combo = QComboBox(self)
-        self.staff_name_combo.setGeometry(x_offset + 100 + input_margin, 50, input_width, input_height)
+        self.staff_name_combo.setGeometry(x_offset + 100 + input_margin, 300, input_width, input_height)
         self.staff_name_combo.currentIndexChanged.connect(self.populate_staff_details)
         self.staff_name_combo.setStyleSheet("background-color: white; border: 1px solid darkgreen;")
 
         self.directorate_label = QLabel("Directorate:", self)
-        self.directorate_label.setGeometry(x_offset, 100, 100, input_height)
+        self.directorate_label.setGeometry(x_offset, 350, 100, input_height)
         self.directorate_label.setStyleSheet("color: darkgreen; font-weight: bold;")
 
         self.directorate_display = QLabel(self)
-        self.directorate_display.setGeometry(x_offset + 100 + input_margin, 100, input_width, input_height)
+        self.directorate_display.setGeometry(x_offset + 100 + input_margin, 350, input_width, input_height)
         self.directorate_display.setStyleSheet("background-color: white; border: 1px solid darkgreen; padding: 2px;")
 
         self.staff_type_label = QLabel("Staff Type:", self)
-        self.staff_type_label.setGeometry(x_offset, 150, 100, input_height)
+        self.staff_type_label.setGeometry(x_offset, 400, 100, input_height)
         self.staff_type_label.setStyleSheet("color: darkgreen; font-weight: bold;")
 
         self.staff_type_display = QLabel(self)
-        self.staff_type_display.setGeometry(x_offset + 100 + input_margin, 150, input_width, input_height)
+        self.staff_type_display.setGeometry(x_offset + 100 + input_margin, 400, input_width, input_height)
         self.staff_type_display.setStyleSheet("background-color: white; border: 1px solid darkgreen; padding: 2px;")
 
         self.id_label = QLabel("Staff ID:", self)
-        self.id_label.setGeometry(x_offset, 200, 100, input_height)
+        self.id_label.setGeometry(x_offset, 450, 100, input_height)
         self.id_label.setStyleSheet("color: darkgreen; font-weight: bold;")
 
         self.id_input = QLineEdit(self)
-        self.id_input.setGeometry(x_offset + 100 + input_margin, 200, input_width, input_height)
+        self.id_input.setGeometry(x_offset + 100 + input_margin, 450, input_width, input_height)
         self.id_input.setStyleSheet("background-color: white; border: 1px solid darkgreen;")
         self.id_input.setReadOnly(True)
 
         self.clock_in_button = QPushButton("Clock In", self)
-        self.clock_in_button.move(150, 250)
+        self.clock_in_button.move(150, 500)
         self.clock_in_button.setFixedWidth(120)
         self.clock_in_button.clicked.connect(self.clock_in)
         self.clock_in_button.setStyleSheet("background-color: darkgreen; color: white; border: none; padding: 5px 10px; font-weight: bold;")
 
-        self.view_db_button = QPushButton("View Database", self)
-        self.view_db_button.move(280, 250)
+        self.view_db_button = QPushButton("Today's Data", self)
+        self.view_db_button.move(280, 500)
         self.view_db_button.setFixedWidth(120)
         self.view_db_button.clicked.connect(self.view_database)
         self.view_db_button.setStyleSheet("background-color: darkgreen; color: white; border: none; padding: 5px 10px; font-weight: bold;")
         
         self.view_staff_data_button = QPushButton("View Staff Data", self)
-        self.view_staff_data_button.move(410, 250)
+        self.view_staff_data_button.move(410, 500)
         self.view_staff_data_button.setFixedWidth(120)
         self.view_staff_data_button.clicked.connect(self.view_staff_data)
         self.view_staff_data_button.setStyleSheet("background-color: darkgreen; color: white; border: none; padding: 5px 10px; font-weight: bold;")
 
         self.generate_analytics_button = QPushButton("Generate Analytics", self)
-        self.generate_analytics_button.move(540, 250)
+        self.generate_analytics_button.move(540, 500)
         self.generate_analytics_button.setFixedWidth(130)
         self.generate_analytics_button.clicked.connect(self.generate_analytics)
         self.generate_analytics_button.setStyleSheet("background-color: darkgreen; color: white; border: none; padding: 5px 10px; font-weight: bold;")
@@ -149,7 +149,7 @@ class ClockInRegister(QMainWindow):
         self.generate_analytics_button.clicked.connect(self.highlight_button)
         
         self.clock_in_message_label = QLabel("", self)
-        self.clock_in_message_label.setGeometry(x_offset, 290, 300, 20)
+        self.clock_in_message_label.setGeometry(x_offset, 550, 300, 20)
         self.clock_in_message_label.setStyleSheet("color: red;")
 
         self.plot_widget = pg.PlotWidget(title="Monthly Statistics")
@@ -226,7 +226,6 @@ class ClockInRegister(QMainWindow):
         try:
             with open("staff_data.csv", "w", newline="") as file:
                 writer = csv.writer(file)
-                # Write the header row
                 writer.writerow(["staff_id", "directorate", "staff_type", "full_name"])
                 for row in range(table.rowCount()):
                     row_data = [table.item(row, col).text() for col in range(table.columnCount())]
@@ -358,8 +357,8 @@ class ClockInRegister(QMainWindow):
                 current_time = datetime.now().time()
                 if current_time <= time(hour=9, minute=10):
                     status = "Present"
-                elif time(hour=9, minute=11) <= current_time <= time(hour=11, minute=59):
-                    status = "Tardy"
+                elif time(hour=9, minute=11) <= current_time <= time(hour=15, minute=59):
+                    status = "Late"
                 else:
                     status = "Absent"
                 
@@ -409,10 +408,10 @@ class ClockInRegister(QMainWindow):
     def check_time(self):
         current_time = datetime.now().time()
         late_time_start = time(hour=9, minute=11)
-        late_time_end = time(hour=11, minute=59)
+        late_time_end = time(hour=15, minute=59)
         closing_time = time(hour=16)
 
-        if current_time <= late_time_end:
+        if current_time < closing_time:
             staff_ids = self.load_staff_ids()
             if not staff_ids:
                 print("Error: No staff IDs found.")
@@ -430,20 +429,20 @@ class ClockInRegister(QMainWindow):
                 return
 
             staff_ids_clocked_in = set(row[0] for row in clock_in_data)
-            tardy_staff = [row for row in clock_in_data if row[0] not in staff_ids_clocked_in and row[4] == "present"]
-            tardy_staff_ids = [row[0] for row in tardy_staff if self.get_time(row[5]) > late_time_start]
-            if tardy_staff_ids:
-                self.mark_tardy(tardy_staff_ids)
-                print("Tardy staff marked between 9:11 am and 11:59 am.")
-                clock_in_data = [row for row in clock_in_data if row[0] not in tardy_staff_ids]
+            late_staff = [row for row in clock_in_data if row[0] not in staff_ids_clocked_in and row[4] == "present"]
+            late_staff_ids = [row[0] for row in late_staff if self.get_time(row[5]) > late_time_start]
+            if late_staff_ids:
+                self.mark_late(late_staff_ids)
+                print("Late staff marked between 9:11 am and 3:59 pm.")
+                clock_in_data = [row for row in clock_in_data if row[0] not in late_staff_ids]
 
                 with open(self.clock_in_data_filename, "w", newline="") as file:
                     writer = csv.writer(file)
                     writer.writerows(clock_in_data)
             else:
-                print("No tardy staff between 9:11 am and 11:59 am.")
+                print("No late staff between 9:11 am and 3:59 pm.")
 
-        elif current_time <= closing_time:
+        elif current_time >= closing_time:
             staff_ids = self.load_staff_ids()
             if not staff_ids:
                 print("Error: No staff IDs found.")
@@ -464,11 +463,9 @@ class ClockInRegister(QMainWindow):
             absentees = [staff_id for staff_id in staff_ids if staff_id not in staff_ids_clocked_in]
             if absentees:
                 self.mark_absentees(absentees)
-                print("Absentees marked after 12:00 pm.")
+                print("Absentees marked after 4:00 pm.")
             else:
-                print("No absentees after 12:00 pm.")
-        else:
-            print("No action required at this time.")
+                print("No absentees after 4:00 pm.")
 
     def get_time(self, timestamp):
         return datetime.strptime(timestamp, "%d/%m/%Y %H:%M:%S").time()
@@ -476,31 +473,28 @@ class ClockInRegister(QMainWindow):
     def mark_absentees(self, absentees):
         try:
             current_date = datetime.now().strftime("%d-%m-%Y")
-            file_name = f"absent_{current_date}.csv"
-            with open(file_name, "w", newline="") as file:
+            file_name = f"clock_in_data_{current_date}.csv"
+            with open(file_name, "a", newline="") as file:
                 writer = csv.writer(file)
-                writer.writerow(["Staff ID"])
                 for staff_id in absentees:
-                    writer.writerow([staff_id])
-            print(f"Absentees marked after 12:00 pm. Check '{file_name}' for details.")
+                    writer.writerow([staff_id, "", "", "", "Absent", ""])
+            print(f"Absentees marked after 4:00 pm in '{file_name}'.")
             self.remove_absentees_from_data(absentees)
         except Exception as e:
             print(f"Error while marking absentees: {e}")
 
-    def mark_tardy(self, tardy_staff):
+    def mark_late(self, late_staff):
         try:
             current_date = datetime.now().strftime("%d-%m-%Y")
-            file_name = f"tardy_{current_date}.csv"
-            with open(file_name, "w", newline="") as file:
+            file_name = f"clock_in_data_{current_date}.csv"
+            with open(file_name, "a", newline="") as file:
                 writer = csv.writer(file)
-                writer.writerow(["Staff ID"])
-                for staff_id in tardy_staff:
-                    writer.writerow([staff_id])
-            print(f"Tardy staff marked between 9:11 am and 12:00 pm. Check '{file_name}' for details.")
-            self.remove_tardy_from_data(tardy_staff)
+                for staff_id in late_staff:
+                    writer.writerow([staff_id, "", "", "", "Late", ""])
+            print(f"Late staff marked between 9:11 am and 4:00 pm in '{file_name}'.")
+            self.remove_late_from_data(late_staff)
         except Exception as e:
-            print(f"Error while marking tardy staff: {e}")
-
+            print(f"Error while marking late staff: {e}")
 
     def load_staff_ids(self):
         staff_ids = []
