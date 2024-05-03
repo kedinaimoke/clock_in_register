@@ -5,8 +5,14 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QPushButton, QCo
                              QMessageBox, QDialogButtonBox)
 from PyQt5.QtCore import QDateTime, QTimer, Qt
 from PyQt5.QtGui import QPixmap, QIcon, QFont
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+import numpy as np
+import matplotlib.pyplot as plt
+import math
 import pyqtgraph as pg
 from datetime import datetime, time
+from collections import defaultdict
 
 class LoginDialog(QDialog):
     def __init__(self):
@@ -66,8 +72,13 @@ class AddStaffDialog(QDialog):
         self.setWindowTitle("Add New Staff")
         self.setWindowIcon(QIcon("dsalogo-297x300.png"))
         self.setFixedSize(400, 300)
-        
         layout = QVBoxLayout()
+
+        font = QFont()
+        font.setFamily("Arial")
+        font.setPointSize(12)
+        self.setStyleSheet("background-color: white; color: darkgreen; font-weight: bold;")
+        self.setFont(font)
 
         self.staff_id_label = QLabel("Staff ID:")
         self.staff_id_input = QLineEdit()
@@ -130,8 +141,13 @@ class RemoveStaffDialog(QDialog):
         self.setWindowTitle("Remove Staff")
         self.setWindowIcon(QIcon("dsalogo-297x300.png"))
         self.setFixedSize(400, 100)
-        
         layout = QVBoxLayout()
+
+        font = QFont()
+        font.setFamily("Arial")
+        font.setPointSize(12)
+        self.setStyleSheet("background-color: white; color: darkgreen; font-weight: bold;")
+        self.setFont(font)
 
         self.staff_id_label = QLabel("Staff ID:")
         self.staff_id_input = QLineEdit()
@@ -155,8 +171,18 @@ class RemoveStaffDialog(QDialog):
             QMessageBox.warning(self, "Warning", "Staff ID must be provided.")
             return
 
-        # If staff ID is provided, remove the data
+        if not self.check_existing_id(staff_id):
+            QMessageBox.warning(self, "Warning", "Staff ID does not exist.")
+            return
+
         self.remove_staff()
+
+    def check_existing_id(self, staff_id):
+        rows = self.table_widget.rowCount()
+        for row in range(rows):
+            if self.table_widget.item(row, 0).text() == staff_id:
+                return True
+        return False
 
     def remove_staff(self):
         rows = self.table_widget.rowCount()
@@ -165,7 +191,6 @@ class RemoveStaffDialog(QDialog):
                 self.table_widget.removeRow(row)
                 break
 
-        # Remove the staff from the CSV file
         with open("staff_data.csv", "r") as file:
             lines = file.readlines()
 
@@ -176,6 +201,63 @@ class RemoveStaffDialog(QDialog):
 
         QMessageBox.information(self, "Success", "Staff removed successfully.")
         self.accept()
+
+class AnalyticsDialog(QDialog):
+    def __init__(self, clock_in_data, present_percentage, late_percentage, absent_percentage):
+        super().__init__()
+        
+        self.clock_in_data = clock_in_data
+        self.present_percentage = present_percentage
+        self.late_percentage = late_percentage
+        self.absent_percentage = absent_percentage
+        
+        print("Present percentage before creating dialog:", self.present_percentage)
+        print("Late percentage before creating dialog:", self.late_percentage)
+        print("Absent percentage before creating dialog:", self.absent_percentage)
+
+        self.setWindowTitle("Generate Analytics")
+        self.setWindowIcon(QIcon("dsalogo-297x300.png"))
+        self.setGeometry(100, 100, 800, 600)
+
+        font = QFont()
+        font.setFamily("Arial")
+        font.setPointSize(12)
+        
+        self.setStyleSheet("background-color: white; color: darkgreen; font-weight: bold;")
+        self.setFont(font)
+
+        self.layout = QVBoxLayout()
+
+        self.canvas = FigureCanvas(Figure(figsize=(5, 5), dpi=100))
+        self.layout.addWidget(self.canvas)
+
+        self.setLayout(self.layout)
+
+    def draw_pie(self):
+        print("Data for pie chart:", [self.present_percentage, self.late_percentage, self.absent_percentage])
+
+        sizes = [self.present_percentage, self.late_percentage, self.absent_percentage]
+        labels = ['Present', 'Late', 'Absent']
+
+        fig, ax = plt.subplots(figsize=(6, 6))
+        wedges, texts, autotexts = ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90, labeldistance=1.2)
+        ax.axis('equal')
+
+        for label in ax.get_xticklabels() + ax.get_yticklabels():
+            label.set_fontsize(12)
+
+        ax.xaxis.labelpad = 20
+
+        for label, autotext in zip(labels, autotexts):
+            x, y = autotext.get_position()
+            if label == 'Present':
+                autotext.set_position((x, y + 0.1))
+            elif label == 'Absent':
+                autotext.set_position((x, y - 0.1))
+
+        self.canvas.figure = fig
+        self.canvas.draw()
+
 class ClockInRegister(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -200,6 +282,12 @@ class ClockInRegister(QMainWindow):
         self.image_label.setScaledContents(True)
 
         self.set_window_icon("dsalogo-297x300.png")
+
+        font = QFont()
+        font.setFamily("Arial")
+        font.setPointSize(12)
+        self.setStyleSheet("background-color: white; color: darkgreen; font-weight: bold;")
+        self.setFont(font)
 
         self.staff_name_label = QLabel("Staff Name:", self)
         self.staff_name_label.setGeometry(x_offset, 300, 100, input_height)
@@ -286,8 +374,10 @@ class ClockInRegister(QMainWindow):
 
         self.clock_in_data_filename = f"clock_in_data_{datetime.now().strftime('%d-%m-%Y')}.csv"
         self.load_clock_in_data(self.clock_in_data_filename)
-        self.calculate_monthly_statistics()
-        self.plot_statistics()
+
+        self.present_percentage = 0
+        self.late_percentage = 0
+        self.absent_percentage = 0
 
     def set_window_icon(self, icon_path):
         icon = QIcon(icon_path)
@@ -468,27 +558,94 @@ class ClockInRegister(QMainWindow):
         except Exception as e:
             print(f"Error: {e}")
 
-    def generate_analytics(self):
-        self.calculate_monthly_statistics()
-        self.plot_statistics()
+    def load_data_from_csv(self):
+        try:
+            with open(self.clock_in_data_filename, 'r') as file:
+                reader = csv.reader(file)
+                data = list(reader)
+            print(f"Loaded data: {data}")
+            return data
+        except FileNotFoundError:
+            print(f"Error: File '{self.clock_in_data_filename}' not found.")
+            return []
 
-    def calculate_monthly_statistics(self):
-        self.months = sorted(self.clock_in_data.keys())
-        self.present_percentages = [self.clock_in_data[month]["present"] / (self.clock_in_data[month]["present"] + self.clock_in_data[month]["absent"]) * 100 for month in self.months]
-        self.absent_percentages = [self.clock_in_data[month]["absent"] / (self.clock_in_data[month]["present"] + self.clock_in_data[month]["absent"]) * 100 for month in self.months]
+    def draw_pie_chart(sizes, labels):
+        fig, ax = plt.subplots()
+        ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+        ax.axis('equal')
+        plt.show()
+    
+    def calculate_percentages(self):
+        present_count = 0
+        late_count = 0
+        absent_count = 0
 
-    def plot_statistics(self):
-        self.plot_widget.clear()
-        self.plot_widget.addLegend()
-        self.plot_widget.setLabel("left", "Percentage", units="%")
-        self.plot_widget.setLabel("bottom", "Month")
-        self.plot_widget.setXRange(0, len(self.months), padding=0.1)
+        for entry in self.clock_in_data:
+            if entry[4] == 'Present':
+                present_count += 1
+            elif entry[4] == 'Late':
+                late_count += 1
+            elif entry[4] == 'Absent':
+                absent_count += 1
         
-        x_labels = [(i, month) for i, month in enumerate(self.months)]
-        self.plot_widget.getAxis("bottom").setTicks([x_labels])
+        total_count = present_count + late_count + absent_count
 
-        self.plot_widget.plot(range(len(self.months)), self.present_percentages, pen=None, symbol='o', symbolSize=10, name="Present Percentage", fillLevel=0)
-        self.plot_widget.plot(range(len(self.months)), self.absent_percentages, pen=None, symbol='s', symbolSize=10, name="Absent Percentage", fillLevel=0)
+        if total_count == 0:
+            print("No data available.")
+            return 0, 0, 0
+
+        present_percentage = (present_count / total_count) * 100
+        late_percentage = (late_count / total_count) * 100
+        absent_percentage = (absent_count / total_count) * 100
+
+        print(f"Late count: {late_count}, Absent count: {absent_count}, Present count: {present_count}")
+        print(f"Late percentage: {late_percentage}, Absent percentage: {absent_percentage}, Present percentage: {present_percentage}")
+
+        return present_percentage, late_percentage, absent_percentage
+
+    def generate_analytics(self):
+        print(f"Loading data from: {self.clock_in_data_filename}")
+        self.clock_in_data = self.load_data_from_csv()
+        print(f"Loaded data: {self.clock_in_data}")
+        
+        present_count = 0
+        late_count = 0
+        absent_count = 0
+
+        for entry in self.clock_in_data:
+            if entry[4] == 'Late':
+                late_count += 1
+            elif entry[4] == 'Absent':
+                absent_count += 1
+            else:
+                present_count += 1
+        
+        total_count = present_count + late_count + absent_count
+
+        if total_count == 0:
+            print("No data available.")
+            return
+
+        present_percentage = (present_count / total_count) * 100
+        late_percentage = (late_count / total_count) * 100
+        absent_percentage = (absent_count / total_count) * 100
+
+        print(f"Late count: {late_count}, Absent count: {absent_count}, Present count: {present_count}")
+        print(f"Late percentage: {late_percentage}, Absent percentage: {absent_percentage}, Present percentage: {present_percentage}")
+        
+        if present_count == 0 and late_count == 0 and absent_count == 0:
+            print("All counts are zero. Cannot draw pie chart.")
+            return
+
+        print(f"Present percentage before creating dialog: {present_percentage}")
+        print(f"Late percentage before creating dialog: {late_percentage}")
+        print(f"Absent percentage before creating dialog: {absent_percentage}")
+
+        print("Data for pie chart:", [present_count, late_count, absent_count])
+
+        analytics_dialog = AnalyticsDialog(self.clock_in_data, present_percentage, late_percentage, absent_percentage)
+        analytics_dialog.draw_pie()
+        analytics_dialog.exec_()
 
     def clock_in(self):
         directorate = self.directorate_display.text()
@@ -680,7 +837,6 @@ class ClockInRegister(QMainWindow):
         layout.addWidget(table)
         dialog.setLayout(layout)
         dialog.exec_()
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
