@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import pyqtgraph as pg
-from datetime import datetime, time
+from datetime import datetime, timedelta, time
 from collections import defaultdict
 
 class LoginDialog(QDialog):
@@ -694,7 +694,7 @@ class ClockInRegister(QMainWindow):
 
             try:
                 start_date = datetime.strptime(start_date, "%d/%m/%Y")
-                end_date = datetime.strptime(end_date, "%d/%m/%Y")
+                end_date = datetime.strptime(end_date, "%d/%m/%Y") + timedelta(days=1) - timedelta(seconds=1)
             except ValueError:
                 QMessageBox.critical(self, "Error", "Incorrect date format. Please use dd/mm/yyyy.")
                 return
@@ -714,7 +714,12 @@ class ClockInRegister(QMainWindow):
                             else:
                                 full_datetime_str = row["Time"]
 
-                            clock_in_date = datetime.strptime(full_datetime_str, "%d/%m/%Y %H:%M:%S")
+                            try:
+                                clock_in_date = datetime.strptime(full_datetime_str, "%d/%m/%Y %H:%M:%S")
+                            except ValueError as e:
+                                print(f"Error parsing date: {e}")
+                                continue
+
                             if start_date <= clock_in_date <= end_date:
                                 results.append(row)
 
