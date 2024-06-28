@@ -3,7 +3,7 @@ import os
 import csv
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QPushButton, QComboBox,
                              QLineEdit, QDialog, QHBoxLayout, QVBoxLayout, QTableWidget, QTableWidgetItem,
-                             QMessageBox, QDialogButtonBox, QDateEdit, QTextEdit)
+                             QMessageBox, QDialogButtonBox, QDateEdit, QTextEdit, QAbstractItemView)
 from PyQt5.QtCore import QDateTime, QDate, QTimer, Qt
 from PyQt5.QtGui import QPixmap, QIcon, QFont
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -323,7 +323,12 @@ class SearchResultsDialog(QDialog):
             self.table_widget.setItem(row_index, 4, QTableWidgetItem(result["Status"]))
             self.table_widget.setItem(row_index, 5, QTableWidgetItem(result["Time"]))
 
+            for col_index in range(6):
+                item = self.table_widget.item(row_index, col_index)
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+
         self.table_widget.resizeColumnsToContents()
+        self.table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)
         layout.addWidget(self.table_widget)
 
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
