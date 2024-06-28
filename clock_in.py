@@ -1,9 +1,10 @@
 import sys
+import os
 import csv
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QPushButton, QComboBox,
                              QLineEdit, QDialog, QHBoxLayout, QVBoxLayout, QTableWidget, QTableWidgetItem,
-                             QMessageBox, QDialogButtonBox)
-from PyQt5.QtCore import QDateTime, QTimer, Qt
+                             QMessageBox, QDialogButtonBox, QDateEdit, QTextEdit)
+from PyQt5.QtCore import QDateTime, QDate, QTimer, Qt
 from PyQt5.QtGui import QPixmap, QIcon, QFont
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -258,6 +259,79 @@ class AnalyticsDialog(QDialog):
         self.canvas.figure = fig
         self.canvas.draw()
 
+class SearchDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Search")
+        self.setGeometry(600, 300, 400, 200)
+        self.setStyleSheet("background-color: white;")
+        self.setFixedSize(400, 200)
+        self.setWindowIcon(QIcon("dsalogo-297x300.png"))
+
+        layout = QVBoxLayout()
+
+        self.search_staff_id_label = QLabel("Search Staff ID:", self)
+        layout.addWidget(self.search_staff_id_label)
+
+        self.search_id_input = QLineEdit(self)
+        layout.addWidget(self.search_id_input)
+
+        self.start_date_label = QLabel("Start Date:", self)
+        layout.addWidget(self.start_date_label)
+
+        self.start_date_edit = QDateEdit(self)
+        self.start_date_edit.setCalendarPopup(True)
+        self.start_date_edit.setDate(QDate.currentDate())
+        layout.addWidget(self.start_date_edit)
+
+        self.end_date_label = QLabel("End Date:", self)
+        layout.addWidget(self.end_date_label)
+
+        self.end_date_edit = QDateEdit(self)
+        self.end_date_edit.setCalendarPopup(True)
+        self.end_date_edit.setDate(QDate.currentDate())
+        layout.addWidget(self.end_date_edit)
+
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+
+        self.setLayout(layout)
+
+class SearchResultsDialog(QDialog):
+    def __init__(self, results, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Search Results")
+        self.setGeometry(600, 300, 600, 400)
+        self.setStyleSheet("background-color: white;")
+        self.setFixedSize(600, 400)
+        self.setWindowIcon(QIcon("dsalogo-297x300.png"))
+
+        layout = QVBoxLayout()
+
+        self.table_widget = QTableWidget(self)
+        self.table_widget.setRowCount(len(results))
+        self.table_widget.setColumnCount(6)
+        self.table_widget.setHorizontalHeaderLabels(["Date", "Staff Name", "Directorate", "Staff Type", "Status", "Time"])
+
+        for row_index, result in enumerate(results):
+            self.table_widget.setItem(row_index, 0, QTableWidgetItem(result["Date"]))
+            self.table_widget.setItem(row_index, 1, QTableWidgetItem(result["Staff Name"]))
+            self.table_widget.setItem(row_index, 2, QTableWidgetItem(result["Directorate"]))
+            self.table_widget.setItem(row_index, 3, QTableWidgetItem(result["Staff Type"]))
+            self.table_widget.setItem(row_index, 4, QTableWidgetItem(result["Status"]))
+            self.table_widget.setItem(row_index, 5, QTableWidgetItem(result["Time"]))
+
+        self.table_widget.resizeColumnsToContents()
+        layout.addWidget(self.table_widget)
+
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
+        button_box.accepted.connect(self.accept)
+        layout.addWidget(button_box)
+
+        self.setLayout(layout)
+
 class ClockInRegister(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -266,7 +340,7 @@ class ClockInRegister(QMainWindow):
             sys.exit(1)
         
         self.setWindowTitle("Clock-in Register")
-        self.setGeometry(200, 100, 800, 600)
+        self.setGeometry(200, 100, 900, 600)
         self.setStyleSheet("background-color: white;")
         self.setFixedSize(800, 600)
 
@@ -289,39 +363,38 @@ class ClockInRegister(QMainWindow):
         self.setStyleSheet("background-color: white; color: darkgreen; font-weight: bold;")
         self.setFont(font)
 
+        self.staff_id_label = QLabel("Staff ID:", self)
+        self.staff_id_label.setGeometry(x_offset, 300, 100, input_height)
+        self.staff_id_label.setStyleSheet("color: darkgreen; font-weight: bold;")
+
+        self.id_input = QLineEdit(self)
+        self.id_input.setGeometry(x_offset + 100 + input_margin, 300, input_width, input_height)
+        self.id_input.setStyleSheet("background-color: white; border: 1px solid darkgreen;")
+        self.id_input.textChanged.connect(self.populate_staff_details)
+
         self.staff_name_label = QLabel("Staff Name:", self)
-        self.staff_name_label.setGeometry(x_offset, 300, 100, input_height)
+        self.staff_name_label.setGeometry(x_offset, 350, 100, input_height)
         self.staff_name_label.setStyleSheet("color: darkgreen; font-weight: bold;")
 
-        self.staff_name_combo = QComboBox(self)
-        self.staff_name_combo.setGeometry(x_offset + 100 + input_margin, 300, input_width, input_height)
-        self.staff_name_combo.currentIndexChanged.connect(self.populate_staff_details)
-        self.staff_name_combo.setStyleSheet("background-color: white; border: 1px solid darkgreen;")
+        self.staff_name_display = QLabel(self)
+        self.staff_name_display.setGeometry(x_offset + 100 + input_margin, 350, input_width, input_height)
+        self.staff_name_display.setStyleSheet("background-color: white; border: 1px solid darkgreen; padding: 2px;")
 
         self.directorate_label = QLabel("Directorate:", self)
-        self.directorate_label.setGeometry(x_offset, 350, 100, input_height)
+        self.directorate_label.setGeometry(x_offset, 400, 100, input_height)
         self.directorate_label.setStyleSheet("color: darkgreen; font-weight: bold;")
 
         self.directorate_display = QLabel(self)
-        self.directorate_display.setGeometry(x_offset + 100 + input_margin, 350, input_width, input_height)
+        self.directorate_display.setGeometry(x_offset + 100 + input_margin, 400, input_width, input_height)
         self.directorate_display.setStyleSheet("background-color: white; border: 1px solid darkgreen; padding: 2px;")
 
         self.staff_type_label = QLabel("Staff Type:", self)
-        self.staff_type_label.setGeometry(x_offset, 400, 100, input_height)
+        self.staff_type_label.setGeometry(x_offset, 450, 100, input_height)
         self.staff_type_label.setStyleSheet("color: darkgreen; font-weight: bold;")
 
         self.staff_type_display = QLabel(self)
-        self.staff_type_display.setGeometry(x_offset + 100 + input_margin, 400, input_width, input_height)
+        self.staff_type_display.setGeometry(x_offset + 100 + input_margin, 450, input_width, input_height)
         self.staff_type_display.setStyleSheet("background-color: white; border: 1px solid darkgreen; padding: 2px;")
-
-        self.id_label = QLabel("Staff ID:", self)
-        self.id_label.setGeometry(x_offset, 450, 100, input_height)
-        self.id_label.setStyleSheet("color: darkgreen; font-weight: bold;")
-
-        self.id_input = QLineEdit(self)
-        self.id_input.setGeometry(x_offset + 100 + input_margin, 450, input_width, input_height)
-        self.id_input.setStyleSheet("background-color: white; border: 1px solid darkgreen;")
-        self.id_input.setReadOnly(True)
 
         self.clock_in_button = QPushButton("Clock In", self)
         self.clock_in_button.move(150, 500)
@@ -346,7 +419,12 @@ class ClockInRegister(QMainWindow):
         self.generate_analytics_button.setFixedWidth(130)
         self.generate_analytics_button.clicked.connect(self.generate_analytics)
         self.generate_analytics_button.setStyleSheet("background-color: darkgreen; color: white; border: none; padding: 5px 10px; font-weight: bold;")
-
+        
+        self.search_button = QPushButton("Search", self)
+        self.search_button.setGeometry(680, 500, 120, input_height)
+        self.search_button.setStyleSheet("background-color: darkgreen; color: white; border: none; padding: 5px 10px; font-weight: bold;")
+        self.search_button.clicked.connect(self.open_search_dialog)
+                
         self.clock_in_button.clicked.connect(self.highlight_button)
         self.view_db_button.clicked.connect(self.highlight_button)
         self.view_staff_data_button.clicked.connect(self.highlight_button)
@@ -368,9 +446,6 @@ class ClockInRegister(QMainWindow):
         self.highlight_timer.setSingleShot(True)
         self.highlight_timer.timeout.connect(self.reset_button_style)
         self.highlight_timer.start(300)
-
-        self.load_staff_names_from_csv("staff_data.csv")
-        self.populate_staff_details()
 
         self.clock_in_data_filename = f"clock_in_data_{datetime.now().strftime('%d-%m-%Y')}.csv"
         self.load_clock_in_data(self.clock_in_data_filename)
@@ -413,7 +488,6 @@ class ClockInRegister(QMainWindow):
                 for i, row in enumerate(data):
                     for j, value in enumerate(row):
                         item = QTableWidgetItem(value)
-                        # item.setFlags(item.flags() & ~Qt.ItemIsEditable)
                         table.setItem(i, j, item)
         except FileNotFoundError:
             print("Error: staff_data.csv not found.")
@@ -441,9 +515,6 @@ class ClockInRegister(QMainWindow):
         layout.addLayout(button_layout)
     
         dialog.setLayout(layout)
-
-        # layout.addWidget(add_new_button)
-        # layout.addWidget(button_box)
         dialog.rejected.connect(lambda: self.load_staff_names_from_csv("staff_data.csv"))
         dialog.exec_()
 
@@ -485,57 +556,24 @@ class ClockInRegister(QMainWindow):
             print(f"Error loading staff names: {e}")
 
     def populate_staff_details(self):
-        staff_name = self.staff_name_combo.currentText().strip()
-        print("Staff name:", staff_name)
-        if staff_name:
+        staff_id = self.id_input.text().strip()
+        print("Staff ID:", staff_id)
+        if staff_id:
             try:
                 with open("staff_data.csv", "r", encoding="utf-8") as file:
                     reader = csv.DictReader(file)
                     for row in reader:
-                        print("Row:", row)
-                        csv_staff_name = row["full_name"].strip()
-                        print("Comparing:", csv_staff_name)
-                        if csv_staff_name == staff_name:
-                            staff_id = row["staff_id"]
-                            self.id_input.setText(staff_id)
-                            directorate = row["directorate"].strip()
-                            # self.directorate_display.addItem(directorate)
-                            self.directorate_display.setText(directorate)
-                            self.populate_staff_types(directorate)
+                        if row["staff_id"] == staff_id:
+                            self.staff_name_display.setText(row["full_name"])
+                            self.directorate_display.setText(row["directorate"])
                             self.staff_type_display.setText(row["staff_type"])
                             print(f"Staff details found: {row}")
                             return
-                print(f"Error: Staff details not found for: {staff_name}")
+                print(f"Error: Staff details not found for ID: {staff_id}")
             except FileNotFoundError:
                 print("Error: staff_data.csv not found.")
             except Exception as e:
                 print(f"Error populating staff details: {e}")
-
-
-    def populate_staff_types(self, directorate):
-        # directorate = self.directorate_combo.currentText()
-        staff_types = self.load_staff_types(directorate)
-
-        # self.staff_type_combo.clear()
-        if staff_types:
-            self.staff_type_display.setText(", ".join(staff_types))
-        else:
-            self.staff_type_display.setText("No staff types found")
-
-    def load_staff_types(self, directorate):
-        staff_types = set()
-        try:
-            with open("staff_data.csv", "r") as file:
-                reader = csv.DictReader(file)
-                for row in reader:
-                    if row["directorate"] == directorate:
-                        staff_types.add(row["staff_type"])
-        except FileNotFoundError:
-            print("Error: staff_data.csv not found.")
-        except Exception as e:
-            print(f"Error: {e}")
-
-        return list(staff_types)
 
     def load_clock_in_data(self, filename):
         self.clock_in_data = {}
@@ -646,12 +684,58 @@ class ClockInRegister(QMainWindow):
         analytics_dialog = AnalyticsDialog(self.clock_in_data, present_percentage, late_percentage, absent_percentage)
         analytics_dialog.draw_pie()
         analytics_dialog.exec_()
+    
+    def open_search_dialog(self):
+        search_dialog = SearchDialog(self)
+        if search_dialog.exec_() == QDialog.Accepted:
+            staff_id = search_dialog.search_id_input.text()
+            start_date = search_dialog.start_date_edit.date().toString("dd/MM/yyyy")
+            end_date = search_dialog.end_date_edit.date().toString("dd/MM/yyyy")
+
+            try:
+                start_date = datetime.strptime(start_date, "%d/%m/%Y")
+                end_date = datetime.strptime(end_date, "%d/%m/%Y")
+            except ValueError:
+                QMessageBox.critical(self, "Error", "Incorrect date format. Please use dd/mm/yyyy.")
+                return
+
+            sanitized_staff_id = self.sanitize_staff_id(staff_id)
+            file_path = f"{sanitized_staff_id}.csv"
+
+            try:
+                with open(file_path, mode='r') as file:
+                    csv_reader = csv.DictReader(file)
+                    results = []
+
+                    for row in csv_reader:
+                        if "Time" in row:
+                            if len(row["Time"]) <= 8:
+                                full_datetime_str = datetime.now().strftime("%d/%m/%Y") + " " + row["Time"]
+                            else:
+                                full_datetime_str = row["Time"]
+
+                            clock_in_date = datetime.strptime(full_datetime_str, "%d/%m/%Y %H:%M:%S")
+                            if start_date <= clock_in_date <= end_date:
+                                results.append(row)
+
+                    if results:
+                        results_dialog = SearchResultsDialog(results, self)
+                        results_dialog.exec_()
+                    else:
+                        QMessageBox.information(self, "No Records", "No records found for the given period.")
+
+            except FileNotFoundError:
+                QMessageBox.critical(self, "Error", f"No data found for staff ID {staff_id}")
+
+    def sanitize_staff_id(self, staff_id):
+        return staff_id.replace('/', '_')
 
     def clock_in(self):
         directorate = self.directorate_display.text()
         staff_type = self.staff_type_display.text()
         staff_id = self.id_input.text()
-        staff_name = self.staff_name_combo.currentText()
+        sanitized_staff_id = self.sanitize_staff_id(staff_id)
+        staff_name = self.staff_name_display.text().strip()
         timestamp = QDateTime.currentDateTime().toString("HH:mm:ss")
 
         if staff_id:
@@ -663,17 +747,32 @@ class ClockInRegister(QMainWindow):
                     status = "Late"
                 else:
                     status = "Absent"
-                
+
                 with open(self.clock_in_data_filename, "a", newline="") as file:
                     writer = csv.writer(file)
                     writer.writerow([staff_id, staff_name, directorate, staff_type, status, timestamp])
                 print(f"{status.capitalize()} clock in successful.")
                 self.show_clock_in_message(f"{staff_name} marked {status}.")
+
+                staff_filename = f"{sanitized_staff_id}.csv"
+                try:
+                    file_exists = os.path.isfile(staff_filename)
+                    with open(staff_filename, 'a', newline='') as file:
+                        writer = csv.writer(file)
+                        if not file_exists:
+                            writer.writerow(["Date", "Staff Name", "Directorate", "Staff Type", "Status", "Time"])
+                        writer.writerow([datetime.now().strftime("%d/%m/%Y"), staff_name, directorate, staff_type, status, timestamp])
+                    print(f"Clock in data recorded for staff ID {staff_id} in {staff_filename}")
+                except Exception as e:
+                    print(f"Error writing to staff file {staff_filename}: {e}")
+
             else:
                 print("Staff has already clocked in.")
                 self.show_clock_in_message("Staff has already clocked in.")
+        
         else:
-            print("Please enter a staff name.")
+            print("Please enter a staff ID.")
+            self.show_clock_in_message("Please enter a staff ID.")
 
     def show_clock_in_message(self, message):
         self.clock_in_message_label.setText(message)
